@@ -9,7 +9,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest"
+    "test": "jest",
+    "test:flow": "node scripts/test-manychat-flow.js",
+    "deploy:railway": "railway up",
+    "logs:railway": "railway logs"
   },
   "dependencies": {
     "express": "^4.18.2",
