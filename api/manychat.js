@@ -1,70 +1,14 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+// URL final: https://SEU_APP.vercel.app/api/manychat
+import { GoogleGenAI } from "@google/genai";
 
-// Inicializar Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-async function generateResponse(userMessage, context = {}) {
-  try {
-    const systemPrompt = `Você é Thayana, uma assistente virtual especializada em orientar mães sobre desenvolvimento infantil, amamentação, nutrição e cuidados com bebês e crianças.
-
-Características:
-- Seja empática, acolhedora e prestativa
-- Use linguagem carinhosa mas profissional
-- Dê respostas práticas e baseadas em evidências
-- Sempre incentive a consulta com pediatra quando necessário
-- Mantenha as respostas concisas para WhatsApp
-
-Contexto do usuário: ${JSON.stringify(context)}
-
-Mensagem da mãe: ${userMessage}`;
-
-    const result = await model.generateContent(systemPrompt);
-    const response = await result.response;
-    return response.text();
-  } catch (error) {
-    console.error('Erro ao gerar resposta Gemini:', error);
-    return 'Desculpe, tive um problema técnico. Pode repetir sua pergunta? 😊';
-  }
-}
-
-async function analyzeMessage(message) {
-  try {
-    const prompt = `Analise esta mensagem de uma mãe e extraia informações relevantes:
-    
-Mensagem: "${message}"
-
-Retorne um JSON com:
-- urgency: "low", "medium", "high"
-- topic: categoria principal (amamentacao, desenvolvimento, saude, etc)
-- needsHumanSupport: boolean
-- keyWords: array de palavras-chave
-
-Responda apenas com o JSON válido.`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    
-    try {
-      return JSON.parse(response.text());
-    } catch {
-      return {
-        urgency: 'medium',
-        topic: 'geral',
-        needsHumanSupport: false,
-        keyWords: []
-      };
-    }
-  } catch (error) {
-    console.error('Erro na análise da mensagem:', error);
-    return {
-      urgency: 'medium',
-      topic: 'geral', 
-      needsHumanSupport: false,
-      keyWords: []
-    };
-  }
-}
+const SYSTEM_PROMPT = `
+Você é a Thayana, enfermeira obstetra e doula. Fale com acolhimento, clareza e objetividade.
+- Não faça diagnóstico; oriente procurar profissional quando necessário.
+- Se a dúvida for técnica sobre plataforma/curso, responda direto (passo a passo).
+- Responda em PT-BR.
+`;
 
 export default async function handler(req, res) {
   // CORS headers
@@ -81,14 +25,29 @@ export default async function handler(req, res) {
     const testMessage = req.query.message || 'Olá, como posso ajudar com meu bebê?';
     
     try {
-      const response = await generateResponse(testMessage, {
-        name: 'Mamãe Teste'
+      const prompt = [
+        SYSTEM_PROMPT,
+        `Usuária (teste): ${testMessage}`,
+        "Responda em até 4-6 frases quando possível."
+      ].filter(Boolean).join("\n\n");
+
+      const result = await client.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt
       });
+
+      let text;
+      if (typeof result?.text === "function") text = result.text();
+      else if (typeof result?.response?.text === "function") text = result.response.text();
+      else if (typeof result?.text === "string") text = result.text;
+      else if (typeof result?.candidates?.[0]?.content?.parts?.[0]?.text === "string")
+        text = result.candidates[0].content.parts[0].text;
+      else text = "Desculpe, não consegui gerar uma resposta agora. Tente novamente em instantes.";
       
       return res.status(200).json({
         message: 'Teste do Gemini AI',
         input: testMessage,
-        output: response,
+        output: text,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
@@ -100,82 +59,65 @@ export default async function handler(req, res) {
     }
   }
 
-  if (req.method === 'POST') {
-    try {
-      console.log('📨 Webhook recebido:', JSON.stringify(req.body, null, 2));
-      
-      const { 
-        last_input_text, 
-        first_name = 'Mamãe',
-        user_id,
-        custom_fields = {}
-      } = req.body;
+  if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
-      if (!last_input_text) {
-        return res.status(400).json({
-          error: 'Mensagem não encontrada',
-          version: 'v1'
-        });
-      }
+  try {
+    // Suporte para ManyChat e formato genérico
+    const { 
+      message = "", 
+      last_input_text = "",
+      topic = "", 
+      user_id = "",
+      first_name = "Mamãe"
+    } = req.body || {};
+    
+    const userMessage = message || last_input_text;
+    if (!userMessage) return res.status(400).json({ error: "message ou last_input_text vazio" });
 
-      const userContext = {
-        name: first_name,
-        userId: user_id,
-        customFields: custom_fields
-      };
+    const prompt = [
+      SYSTEM_PROMPT,
+      topic ? `Contexto do tópico: ${topic}` : "",
+      `Usuária ${first_name} (${user_id || "desconhecida"}): ${userMessage}`,
+      "Responda em até 4-6 frases quando possível."
+    ].filter(Boolean).join("\n\n");
 
-      const analysis = await analyzeMessage(last_input_text);
-      console.log('🔍 Análise da mensagem:', analysis);
+    const result = await client.models.generateContent({
+      model: "gemini-2.0-flash", 
+      contents: prompt
+    });
 
-      const response = await generateResponse(last_input_text, userContext);
-      
-      const manychatResponse = {
+    let text;
+    if (typeof result?.text === "function") text = result.text();
+    else if (typeof result?.response?.text === "function") text = result.response.text();
+    else if (typeof result?.text === "string") text = result.text;
+    else if (typeof result?.candidates?.[0]?.content?.parts?.[0]?.text === "string")
+      text = result.candidates[0].content.parts[0].text;
+    else text = "Desculpe, não consegui gerar uma resposta agora. Tente novamente em instantes.";
+
+    // Formato ManyChat se veio last_input_text
+    if (last_input_text) {
+      return res.status(200).json({
         version: 'v1',
         content: {
-          messages: [
-            {
-              type: 'text',
-              text: response
-            }
-          ],
-          actions: [],
+          messages: [{
+            type: 'text',
+            text: text
+          }],
+          actions: [{
+            action: 'set_field',
+            field_name: 'ultimo_topico',
+            value: topic || 'geral'
+          }],
           quick_replies: []
-        }
-      };
-
-      if (analysis.needsHumanSupport || analysis.urgency === 'high') {
-        manychatResponse.content.actions.push({
-          action: 'add_tag',
-          tag_name: 'URGENTE_SUPORTE_HUMANO'
-        });
-      }
-
-      manychatResponse.content.actions.push({
-        action: 'set_field',
-        field_name: 'ultimo_topico',
-        value: analysis.topic
-      });
-
-      console.log('✅ Resposta enviada:', JSON.stringify(manychatResponse, null, 2));
-      
-      return res.status(200).json(manychatResponse);
-      
-    } catch (error) {
-      console.error('❌ Erro no webhook:', error);
-      
-      return res.status(500).json({
-        version: 'v1',
-        content: {
-          messages: [
-            {
-              type: 'text', 
-              text: 'Ops! Tive um probleminha técnico. Pode tentar novamente? 😊'
-            }
-          ]
         }
       });
     }
-  }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+    // Formato simples
+    return res.status(200).json({ reply: text });
+    
+  } catch (err) {
+    console.error("Erro /api/manychat:", err?.message || err);
+    return res.status(500).json({ error: "Falha ao gerar resposta" });
+  }
 }

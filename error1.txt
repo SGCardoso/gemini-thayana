@@ -1,0 +1,108 @@
+﻿como faco o item 11.4 
+
+Bora validar isso na Vercel. Pelo seu print, abrir https://gemini-thayana.vercel.app deu 404 — isso é normal se você não tem página raiz. O que precisa existir (e testar) é a rota da função serverless:
+https://gemini-thayana.vercel.app/api/manychat
+Abaixo vai o passo-a-passo “cirúrgico” pra garantir que a rota existe, a variável está setada e o teste funciona.
+
+1) Garanta os arquivos certos no projeto
+No raiz do projeto (repo/zip), tenha:
+package.json
+{
+  "name": "gemini-thayana",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@google/genai": "^0.7.0"
+  }
+}
+api/manychat.js
+// URL final: https://SEU_APP.vercel.app/api/manychat
+import { GoogleGenAI } from "@google/genai";
+
+const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const SYSTEM_PROMPT = `
+Você é a Thayana, enfermeira obstetra e doula. Fale com acolhimento, clareza e objetividade.
+- Não faça diagnóstico; oriente procurar profissional quando necessário.
+- Se a dúvida for técnica sobre plataforma/curso, responda direto (passo a passo).
+- Responda em PT-BR.
+`;
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
+
+  try {
+    const { message = "", topic = "", user_id = "" } = req.body || {};
+    if (!message) return res.status(400).json({ error: "message vazio" });
+
+    const prompt = [
+      SYSTEM_PROMPT,
+      topic ? `Contexto do tópico: ${topic}` : "",
+      `Usuária (${user_id || "desconhecida"}): ${message}`,
+      "Responda em até 4-6 frases quando possível."
+    ].filter(Boolean).join("\n\n");
+
+    const result = await client.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompt
+    });
+
+    let text;
+    if (typeof result?.text === "function") text = result.text();
+    else if (typeof result?.response?.text === "function") text = result.response.text();
+    else if (typeof result?.text === "string") text = result.text;
+    else if (typeof result?.candidates?.[0]?.content?.parts?.[0]?.text === "string")
+      text = result.candidates[0].content.parts[0].text;
+    else text = "Desculpe, não consegui gerar uma resposta agora. Tente novamente em instantes.";
+
+    return res.status(200).json({ reply: text });
+  } catch (err) {
+    console.error("Erro /api/manychat:", err?.message || err);
+    return res.status(500).json({ error: "Falha ao gerar resposta" });
+  }
+}
+Se você subiu um ZIP na Vercel: reenvie um zip com essa exata estrutura (/package.json e /api/manychat.js no topo).
+Se usa GitHub: commit/push desses arquivos e a Vercel redeploya automático.
+
+2) Variável de ambiente na Vercel
+No dashboard do projeto → Settings → Environment Variables → Add:
+    • Name: GEMINI_API_KEY
+    • Value: sua chave AIza...
+    • Environments: marque Production, Preview e Development
+    • Save → Redeploy (botão no topo) ou faça um novo commit.
+
+3) Teste a rota na Vercel
+No seu terminal (ou com uma extensão REST):
+curl -X POST https://gemini-thayana.vercel.app/api/manychat \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"123","message":"Tenho 36 semanas, como aliviar dor lombar?"}'
+Resposta esperada:
+{"reply":"...texto..."}
+Se não vier:
+    • Abra o deploy em Vercel → Deployments → Runtime Logs e veja o erro (geralmente é variável faltando ou JSON inválido).
+    • 404 em / é normal; tem que chamar /api/manychat.
+
+4) Conectar no ManyChat (rápido)
+No Flow:
+    1. User Input → salva em @last_input (Text).
+    2. External Request (HTTP)
+        ◦ URL: https://gemini-thayana.vercel.app/api/manychat
+        ◦ POST / Headers: Content-Type: application/json
+        ◦ Body (JSON):
+          {
+            "user_id": "{{user.id}}",
+            "message": "{{last_input}}",
+            "topic": "{{custom.topic}}"
+          }
+        ◦ Save Response → mapeie reply para @ai_reply
+    3. Send Message → {{ai_reply}}
+
+Checklist de erros comuns
+    • ❌ 404 no root / → ✅ use /api/manychat
+    • ❌ 405 → você fez GET; ✅ faça POST
+    • ❌ 500 → confira Runtime Logs; quase sempre é variável GEMINI_API_KEY não setada ou JSON malformado
+    • ❌ “Function not found” → falta a pasta api/ no topo do projeto ou o arquivo não se chamou manychat.js
+Se quiser, me diga a URL atual do seu app na Vercel e eu te digo exatamente qual endpoint chamar e faço um teste de request pra confirmar que está ok.
+
+
+
