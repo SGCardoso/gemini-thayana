@@ -9,8 +9,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "dev:vercel": "vercel dev",
     "test": "jest",
     "test:flow": "node scripts/test-manychat-flow.js",
+    "deploy:vercel": "vercel --prod",
     "deploy:railway": "railway up",
     "logs:railway": "railway logs"
   },

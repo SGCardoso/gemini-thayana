@@ -1,0 +1,14 @@
+﻿Railway tem custo?
+O Railway dá um trial de até 30 dias com US$ 5 de crédito. Depois vira o Free plan com US$ 1/mês de crédito. Quando os créditos acabam, o serviço para até renovar crédito ou você colocar um cartão. Bom para POC curtinha, mas não é “free para sempre” de fato. Railway DocsGitHubNorthflank
+
+Alternativa realmente “sem pagar” (para este caso)
+1) Vercel (Hobby – grátis)
+    • Tem plano Hobby gratuito com funções serverless — perfeito para o External Request do ManyChat. Você ganha um domínio .vercel.app estável. Vercel+2Vercel+2
+    • Como usar: em vez do Express “sempre ligado”, crie uma rota serverless /api/manychat. O ManyChat chama essa URL e a Vercel escala automaticamente.
+
+O que eu recomendo p/ você (zero custo e simples)
+Caminho A — Vercel grátis (o mais rápido):
+    1. Crie um projeto Vercel (Hobby). Vercel
+    2. Adapte seu código para rota serverless api/manychat.js (a lógica é a mesma do Express).
+    3. Faça o deploy → pegue a URL https://seu-app.vercel.app/api/manychat e ponha no External Request do ManyChat.
+
