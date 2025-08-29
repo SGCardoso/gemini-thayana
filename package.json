@@ -1,0 +1,29 @@
+{
+  "name": "gemini-thayana-bot",
+  "version": "1.0.0",
+  "description": "Bot para atendimento com Gemini AI integrado ao ManyChat",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "dotenv": "^16.3.1",
+    "@google/generative-ai": "^0.2.1",
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0"
+  },
+  "keywords": ["gemini", "ai", "chatbot", "manychat", "webhook"],
+  "author": "Sergio",
+  "license": "MIT"
+}

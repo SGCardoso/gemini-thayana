@@ -1,0 +1,24 @@
+﻿    1. Memória atualizada → você tem no Linux Mint:
+        ◦ Google GenAI SDK
+        ◦ Gemini CLI
+        ◦ Google Cloud CLI
+        ◦ n8n
+       👉 Sempre que surgirem soluções pros seus projetos (Thayana, Fernanda, Igreja, etc.), eu vou te lembrar dessas ferramentas se elas puderem melhorar ou baratear a solução.
+
+    2. Sobre o ManyChat gratuito:
+    • O plano Free do ManyChat permite:
+        ◦ Até 1.000 contatos
+        ◦ Automações simples (fluxos)
+        ◦ Ações de External Request (HTTP) ✔️
+        ◦ Integração com APIs externas (desde que você configure a Request URL) ✔️
+👉 Isso significa que o fluxo que sugeri com External Request → /manychat/webhook → reply funciona no plano gratuito sim.
+⚠️ Limitação do free:
+    • Você tem menos templates prontos e limite de contatos ativos.
+    • Se for escalar (milhares de contatos e segmentação avançada), aí precisa do Pro.
+
+📌 Resumindo:
+✅ Dá pra rodar essa integração com o ManyChat free sem problema.
+Mas se você planeja atendimento contínuo com muitas mães entrando no fluxo, vai bater no limite de 1.000 contatos bem rápido → nesse ponto o Pro passa a ser necessário.
+
+👉 Quer que eu já adapte o boilerplate Express para também se conectar com o n8n (ex.: ManyChat → n8n → Gemini → ManyChat), assim você já tem duas rotas possíveis: uma direta (rápida) e uma via automação (para cenários mais complexos)?
+
