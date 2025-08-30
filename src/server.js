@@ -1,13 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import 'dotenv/config';
 
-const manychatRoutes = require('./routes/manychat');
-const geminiService = require('./services/gemini');
+import manychatRoutes from './routes/manychat.js';
+import geminiService from './services/gemini.js';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(helmet());
 app.use(cors());
@@ -32,7 +31,4 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
-  console.log(`🤖 Servidor rodando na porta ${PORT}`);
-  console.log(`📱 ManyChat webhook: http://localhost:${PORT}/manychat/webhook`);
-});
+export default app;

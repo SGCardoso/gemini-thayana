@@ -1,6 +1,6 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const geminiService = require('../services/gemini');
+import geminiService from '../services/gemini.js';
 
 router.post('/webhook', async (req, res) => {
   try {
@@ -134,4 +134,4 @@ router.post('/n8n', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

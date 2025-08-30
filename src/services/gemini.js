@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 class GeminiService {
   constructor() {
@@ -73,4 +73,4 @@ Responda apenas com o JSON válido.`;
   }
 }
 
-module.exports = new GeminiService();
+export default new GeminiService();

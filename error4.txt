@@ -1,0 +1,29 @@
+﻿Esse erro no Vercel, "Error: Function Runtimes must have a valid version, for example now-php@1.0.0", geralmente indica que há um problema na configuração do arquivo vercel.json no seu projeto. A Vercel está esperando que você especifique a versão de algum runtime (como PHP, Python, Go, etc.), mas não consegue encontrar essa informação ou ela está incorreta.
+O problema pode ser causado por:
+    • A falta do arquivo vercel.json na raiz do seu repositório.
+    • O arquivo vercel.json existe, mas não está configurado corretamente.
+    • Você está usando uma versão de runtime que a Vercel não suporta mais ou que precisa de uma configuração específica.
+
+Soluções 🛠️
+1. Crie ou Corrija o arquivo vercel.json
+Se você não tiver esse arquivo, crie um na raiz do seu projeto. Ele deve conter a configuração básica do seu build. Para a maioria dos projetos, a configuração é bem simples.
+Se o seu projeto é baseado em Node.js (como a maioria dos projetos front-end), por exemplo, você pode usar uma configuração como esta:
+JSON
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build"
+}
+    • "buildCommand": É o comando que a Vercel deve executar para construir o seu projeto.
+    • "outputDirectory": É a pasta onde os arquivos estáticos do build são gerados.
+2. Configure a Versão do Node.js
+Para evitar problemas de compatibilidade, adicione um arquivo .nvmrc ou package.json no seu repositório para especificar a versão do Node.js que você está usando. A Vercel usará essa informação para configurar o ambiente de build.
+    • Arquivo .nvmrc: Crie um arquivo chamado .nvmrc na raiz do seu projeto com o número da versão do Node.js, por exemplo: 18.
+    • Arquivo package.json: Adicione a seguinte seção no seu package.json:
+JSON
+{
+  "engines": {
+    "node": "18.x"
+  }
+}
+Ajuste o número 18.x para a versão do Node.js que seu projeto usa.
+

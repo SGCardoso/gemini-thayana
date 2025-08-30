@@ -1,0 +1,56 @@
+﻿Perfeito — analisei os arquivos que você subiu. Aqui vai o diagnóstico + o que ajustar pra o deploy na Vercel funcionar de primeira.
+O que está ok
+    • package.json está minimalista e correto para Vercel Functions (usa ESM e depende só de @google/genai). 
+    • Há uma função de health simples (retorna 200/OK). 
+    • A função do ManyChat já trata CORS, GET de teste e POST com formatação simples e também no formato ManyChat v1. Boa! 
+    • vercel.json fixa o runtime Node 18 para api/**/*.js (adequado). 
+Onde está o problema (e como corrigir)
+    1. Estrutura de pastas
+Na Vercel, as serverless functions respondem por padrão em /api/*. Os arquivos das funções precisam estar em api/.
+Hoje seus handlers parecem estar na raiz (ex.: manychat.js, health.js, e um index.js que expõe status).
+✅ Como arrumar:
+        ◦ Crie a pasta api/ e mova:
+            ▪ manychat.js → api/manychat.js (responderá em /api/manychat) 
+            ▪ health.js → api/health.js (responderá em /api/health) 
+            ▪ (Opcional) index.js → api/index.js para um endpoint raiz de status /api (hoje ele descreve os endpoints e pode ser útil). 
+        ◦ Não é obrigatório ter uma rota / (raiz do site). Se abrir https://app.vercel.app/ e ver 404, é normal. O que importa é https://app.vercel.app/api/manychat.
+    2. Endpoints no README vs. código
+O README fala em /manychat/webhook e outras rotas que não existem no deploy serverless — na Vercel você usará /api/manychat (e /api/health). Sugiro alinhar o README com isso. 
+    3. Variável de ambiente na Vercel
+Garanta em Settings → Environment Variables do projeto:
+        ◦ GEMINI_API_KEY com sua chave do AI Studio (marcado para Production/Preview/Development). A função ManyChat lê exatamente esse nome. 
+Passo a passo pra fechar
+    1. Reorganize as funções (mover arquivos para api/ conforme acima).
+    2. Commit & push (se usa GitHub) ou faça um novo upload do zip com a estrutura:
+       /package.json
+       /vercel.json
+       /api/manychat.js
+       /api/health.js
+       /api/index.js   (opcional)
+    3. Na Vercel, Redeploy.
+    4. Teste no terminal:
+        ◦ Teste rápido (GET):
+          curl "https://SEU_APP.vercel.app/api/manychat?message=Olá%2C+me+ajude+com+amamentação"
+        ◦ Teste principal (POST):
+          curl -X POST https://SEU_APP.vercel.app/api/manychat \
+            -H "Content-Type: application/json" \
+            -d '{"user_id":"123","message":"Tenho 36 semanas, como aliviar dor lombar?"}'
+       Deve voltar {"reply":"..."} da lógica do arquivo ManyChat. 
+    5. ManyChat (External Request)
+        ◦ URL: https://SEU_APP.vercel.app/api/manychat
+        ◦ Method: POST
+        ◦ Headers: Content-Type: application/json
+        ◦ Body (JSON):
+          {
+            "user_id": "{{user.id}}",
+            "message": "{{last_input}}",
+            "topic": "{{custom.topic}}",
+            "first_name": "{{user.first_name}}"
+          }
+        ◦ Save Response: mapeie reply para uma variável (ex.: @ai_reply).
+        ◦ Send Message: {{ai_reply}}.
+Sugestões finais (pequenos ajustes)
+    • Logue os campos de entrada/saída no handler pra facilitar debug (dentro do try): console.log({ user_id, message: userMessage, reply: text }). 
+    • Se quiser também um health simplíssimo em /api (além de /api/health), manter api/index.js como seu “status” é útil. 
+Se preferir, eu te devolvo um ZIP já com a estrutura correta de /api montada a partir desses arquivos — é só me dizer que eu preparo.
+
