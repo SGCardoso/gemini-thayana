@@ -23,6 +23,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     // Endpoint de teste
     const testMessage = req.query.message || 'Olá, como posso ajudar com meu bebê?';
+    console.log('🧪 GET Test:', { message: testMessage });
     
     try {
       const prompt = [
@@ -52,7 +53,7 @@ export default async function handler(req, res) {
       });
     } catch (error) {
       console.error('Erro no teste:', error);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Erro no teste',
         message: error.message 
       });
@@ -72,6 +73,8 @@ export default async function handler(req, res) {
     } = req.body || {};
     
     const userMessage = message || last_input_text;
+    console.log('📨 POST Request:', { user_id, message: userMessage, topic, first_name });
+    
     if (!userMessage) return res.status(400).json({ error: "message ou last_input_text vazio" });
 
     const prompt = [
@@ -93,6 +96,8 @@ export default async function handler(req, res) {
     else if (typeof result?.candidates?.[0]?.content?.parts?.[0]?.text === "string")
       text = result.candidates[0].content.parts[0].text;
     else text = "Desculpe, não consegui gerar uma resposta agora. Tente novamente em instantes.";
+
+    console.log('✅ Response Generated:', { user_id, reply: text.substring(0, 100) + '...' });
 
     // Formato ManyChat se veio last_input_text
     if (last_input_text) {
